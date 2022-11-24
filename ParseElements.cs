@@ -68,12 +68,12 @@ namespace Nosferatu
 
                     foreach (PropertyInfo property in element.GetType().GetProperties())
                     {
-                        if (property.CustomAttributes.Count() == 0 || 
+                        if (property.CustomAttributes.Count() == 0 ||
                             property.CustomAttributes.First().Constructor.DeclaringType
                                                      .ToString() != "Nosferatu.Elements.Inherits.HTMLName")
                             continue;
 
-                        System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument> attrData = 
+                        System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument> attrData =
                             (System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument>)property.CustomAttributes.First().ConstructorArguments.First().Value;
 
                         foreach (object attr in attrData)
