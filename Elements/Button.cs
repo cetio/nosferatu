@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Nosferatu.Elements.Inherits;
 
 namespace Nosferatu.Elements
 {
-    public class Button
+    public class Button : Textile
     {
+        [HTMLName("disabled")]
+        public bool Disabled { get; set; }
     }
 }

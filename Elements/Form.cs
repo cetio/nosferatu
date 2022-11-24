@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Nosferatu.Elements
 {
-    public class Input
+    internal class Form
     {
     }
 }
