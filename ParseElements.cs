@@ -26,50 +26,46 @@ namespace Nosferatu
         public static HTML Build(string html)
         {
             HTML htmlElement = new HTML();
-            List<string> tags = new List<string>();
-
-            int index = html.IndexOf('<');
-            int endIndex = html.IndexOf('>', index + 1);
-            string tag = html.Substring(index + 1, endIndex - 1);
-            html = html.Substring(endIndex + 1, html.Length - endIndex - 1);
+            List<string> tagAttrPairs = new List<string>();
 
             while (true)
             {
-                index = html.IndexOf('<');
-
-                if (html[index + 1] == '/')
-                {
-                    string content = html.Substring(0, index);
-                    tags.Add(tag + $@" nosContent=""{content}""");
-                }
-
-                endIndex = html.IndexOf('>', index + 1);
-                tag = html.Substring(index + 1, endIndex - index - 1);
-                html = html.Substring(endIndex + 1, html.Length - endIndex - 1);
+                int firstCloser = html.IndexOf('>') - 1;
+                string initialTag = html.Substring(1, firstCloser);
+                html = html.Substring(firstCloser + 2);
 
                 if (html.Length == 0)
                     break;
+
+                string expectedContent = html.Substring(0, html.IndexOf('<'));
+                html = html.Substring(html.IndexOf('<'));
+
+                if (initialTag.StartsWith("/") == false)
+                    tagAttrPairs.Add(initialTag + $@" nosContent=""{expectedContent}""");
             }
 
-            foreach (string tag_ in tags)
+            foreach (string tagAttrPair in tagAttrPairs)
             {
-                string Tcontent = tag_.Substring(tag_.IndexOf(' ') + 1);
-                string Theader = tag_.Substring(0, tag_.IndexOf(' '));
-                int attributeCount = Tcontent.Count(x => x == '"') / 2;
+                string attributes = tagAttrPair.Substring(tagAttrPair.IndexOf(' ') + 1);
+                string tag = tagAttrPair.Substring(0, tagAttrPair.IndexOf(' '));
+                int attributeCount = attributes.Count(x => x == '"') / 2;
                 Element element = htmlElement;
 
-                if (Theader != "title" && Theader != "html")
-                    element = ElementKey[Theader];
-                else if (Theader == "head" || Theader == "base" || Theader == "body")
-                    break;
+                if (tag == "head" || tag == "base" || tag == "body" || tag.StartsWith("!DOC"))
+                    continue;
+                else if (tag != "title" && tag != "html")
+                    element = ElementKey[tag];
 
 
                 while (attributeCount != 0)
                 {
-                    int quoteIndex = Tcontent.IndexOf('"');
-                    string content = Tcontent.Substring(quoteIndex + 1, Tcontent.Length - Tcontent.IndexOf('"', quoteIndex) - 2);
-                    string attribute = Tcontent.Substring(0, quoteIndex - 1);
-                   
+                    int quoteIndex = attributes.IndexOf('"');
+                    string content = attributes.Substring(quoteIndex + 1, attributes.IndexOf('"', quoteIndex + 1) - quoteIndex - 1);
+                    string attribute = attributes.Substring(0, quoteIndex - 1);
+
+                    if (attributeCount > 1)
+                        attributes = attributes.Substring(attributes.IndexOf('"', quoteIndex + 1) + 2);
+
                     foreach (PropertyInfo property in element.GetType().GetProperties())
                     {
                         if (property.CustomAttributes.Count() == 0 || 
@@ -80,10 +76,11 @@ namespace Nosferatu
                         System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument> attrData = 
                             (System.Collections.ObjectModel.ReadOnlyCollection<CustomAttributeTypedArgument>)property.CustomAttributes.First().ConstructorArguments.First().Value;
 
-                        string realAttr = attrData.First().ToString().Replace(@"""", "");
-
-                        if (realAttr == attribute)
-                            property.SetValue(element, content);
+                        foreach (object attr in attrData)
+                        {
+                            if (attr.ToString().Replace(@"""", "") == attribute)
+                                property.SetValue(element, ConvertAttrType(content, property.PropertyType));
+                        }
                     }
 
                     attributeCount--;
@@ -94,6 +91,38 @@ namespace Nosferatu
             }
 
             return htmlElement;
+        }
+
+        private static dynamic ConvertAttrType(string data, Type T)
+        {
+            if (T == typeof(string))
+                return data;
+            else if (T == typeof(int))
+                return Convert.ToInt32(data);
+            else if (T == typeof(bool))
+                return Convert.ToBoolean(data);
+            else if (T == typeof(float))
+                return Convert.ToSingle(data);
+            else if (T == typeof(double))
+                return Convert.ToDouble(data);
+            else if (T == typeof(Color))
+            {
+                if (data.StartsWith('#'))
+                    return Color.FromArgb(Convert.ToInt32(data, 16));
+                else if (data.StartsWith("rgb"))
+                {
+                    data = data.Replace("rgb(", "").Replace(")", "");
+                    int[] rgb = data.Split(",").Select(c => int.Parse(c)).ToArray();
+                    return Color.FromArgb(rgb[0], rgb[1], rgb[2]);
+                }
+                else
+                {
+
+                }
+            }
+
+            // this should never happen
+            return null;
         }
     }
 }

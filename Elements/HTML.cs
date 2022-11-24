@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Nosferatu.Elements
 {
-    public class HTML : Textile
+    public class HTML : Element
     {
         [HTMLName("nosContent")]
         public string? Title { get; set; }
